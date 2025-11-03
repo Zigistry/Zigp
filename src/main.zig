@@ -26,11 +26,13 @@ fn self_update(allocator: std.mem.Allocator) !void {
 pub fn main() !void {
     // allocator
     // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = std.heap.c_allocator;
+    // const allocator = std.heap.c_allocator;
     // defer {
     //     const deinit_status = gpa.deinit();
     //     if (deinit_status == .leak) @panic("Memory got leaked.");
     // }
+
+    const allocator = std.heap.c_allocator;
 
     // arguments
     const args = try std.process.argsAlloc(allocator);

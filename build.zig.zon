@@ -3,7 +3,7 @@
     .version = "0.0.0",
     .dependencies = .{
         .zorsig = .{
-            .url = "git+https://github.com/rohanvashisht1234/zorsig?ref=main#4e47d80a8e92f912c9465f4f6ac0c79c89bff4f3",
+            .url = "https://github.com/rohanvashisht1234/zorsig/archive/refs/tags/v0.0.1.tar.gz",
             .hash = "zorsig-0.0.1-AAAAAFgZAABK0y-goAY_tJzAcdU-itZpZiXxWGuU7Jww",
         },
         .zap = .{
@@ -11,8 +11,8 @@
             .hash = "zap-0.10.6-GoeB8w-EJABTkxyoGH_Z8oMBYMxTBvn7YWk-DrJOHuDO",
         },
         .capy = .{
-            .url = "git+https://github.com/capy-ui/capy?ref=2025.3.0-mach#b253eac7c793f388e99f52a319a616dbb5409594",
-            .hash = "capy-0.4.0-xXDmB1C33QXu3fO-gjs0fMQ12FJ2meaQIKnmFL5VDFFx",
+            .url = "git+https://github.com/capy-ui/capy?ref=master#bb12dab974a310b737acbaa6649cc2f2f8f8455f",
+            .hash = "capy-0.4.1-kru7R1I2ZQS55Kk-HN_p8YDKCdkgGhmJe8f0Gq0djDfd",
         },
     },
     .fingerprint = 0x1879e3171df18555,

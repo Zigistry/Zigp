@@ -10,6 +10,16 @@ const tar_file_url = "https://github.com/{s}/archive/refs/tags/{s}.tar.gz";
 
 const in = std.fs.File.stdin();
 
+pub fn print_suggestion(repo: types.repository) void {
+    std.debug.print("{s}Successfully installed {s}.{s}\n", .{ ansi.BRIGHT_GREEN ++ ansi.BOLD, repo.full_name, ansi.RESET });
+    std.debug.print("{s}✧ Suggestion:{s}\n", .{ ansi.BRIGHT_MAGENTA ++ ansi.BOLD, ansi.RESET });
+    std.debug.print("You can add these lines to your build.zig (just above the b.installArtifact(exe) line).\n\n", .{});
+    const suggestor =
+        ansi.BRIGHT_BLUE ++ "const" ++ ansi.BRIGHT_CYAN ++ " {s} " ++ ansi.RESET ++ "= " ++ ansi.BRIGHT_CYAN ++ "b" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "dependency" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ ", ." ++ ansi.BRIGHT_MAGENTA ++ "{{}}" ++ ansi.RESET ++ ");" ++ "\n" ++
+        ansi.BRIGHT_CYAN ++ "exe" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_BLUE ++ "root_module" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "addImport" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ "," ++ ansi.BRIGHT_CYAN ++ " {s}" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "module" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ "));\n";
+    std.debug.print(suggestor, .{ repo.name, repo.name, repo.name, repo.name, repo.name });
+}
+
 pub fn file_exists(file: []const u8) bool {
     var dir = std.fs.cwd().openDir(".", .{}) catch return false;
     defer dir.close();

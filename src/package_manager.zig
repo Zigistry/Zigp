@@ -29,12 +29,15 @@ fn add_package_branch(repo: types.repository, allocator: std.mem.Allocator) !voi
 
     const user_branch_input = hfs.range_input_taker(1, branches_list.len);
 
-    const to_fetch = try std.fmt.allocPrint(allocator, "git+https://github.com/{s}#{s}", .{ repo.full_name, branches_list[user_branch_input - 1] });
+    const tag_to_install = try std.fmt.allocPrint(allocator, "git+https://github.com/{s}#{s}", .{ repo.full_name, branches_list[user_branch_input - 1] });
+    defer allocator.free(tag_to_install);
 
-    var process_to_get_fetch_hash = std.process.Child.init(&[_][]const u8{ "zig", "fetch", to_fetch }, allocator);
+    var process_to_get_fetch_hash = std.process.Child.init(&[_][]const u8{ "zig", "fetch", tag_to_install }, allocator);
     process_to_get_fetch_hash.stdout_behavior = .Pipe;
     try process_to_get_fetch_hash.spawn();
     const fetch_hash = try process_to_get_fetch_hash.stdout.?.readToEndAlloc(allocator, std.math.maxInt(usize));
+
+    defer allocator.free(fetch_hash);
     switch ((try process_to_get_fetch_hash.wait()).Exited) {
         0 => {
             std.debug.print("This is the thing: {s}", .{fetch_hash});
@@ -42,13 +45,13 @@ fn add_package_branch(repo: types.repository, allocator: std.mem.Allocator) !voi
             var iter = std.mem.splitScalar(u8, fetch_hash, '-');
             const name = iter.next().?;
 
-            var new_process: std.process.Child = .init(&[_][]const u8{ "zig", "fetch", "--save", to_fetch }, allocator);
+            var new_process: std.process.Child = .init(&[_][]const u8{ "zig", "fetch", "--save", tag_to_install }, allocator);
             new_process.stderr_behavior = .Pipe;
 
             try new_process.spawn();
 
             const thing = try new_process.stderr.?.readToEndAlloc(allocator, std.math.maxInt(usize));
-
+            defer allocator.free(thing);
             const new_term = try new_process.wait();
 
             const index = std.mem.indexOf(u8, thing, " to commit ") orelse return error.no_internet;
@@ -58,7 +61,7 @@ fn add_package_branch(repo: types.repository, allocator: std.mem.Allocator) !voi
 
             switch (new_term.Exited) {
                 0 => {
-                    const file = try std.fs.cwd().openFile("./zigp.zon", .{});
+                    const file = try std.fs.cwd().openFile("./zigp.zon", .{ .mode = .read_write });
                     defer file.close();
 
                     // Read entire file into memory
@@ -66,9 +69,19 @@ fn add_package_branch(repo: types.repository, allocator: std.mem.Allocator) !voi
                     defer allocator.free(data_u8);
 
                     const zigp_raw_data = try allocator.dupeZ(u8, data_u8);
+                    defer allocator.free(zigp_raw_data);
                     const commit_hash = iter5.next().?;
 
                     var zigp_zon_parsed = try hfs.parse_zigp_zon(allocator, zigp_raw_data);
+                    defer {
+                        allocator.free(zigp_zon_parsed.zig_version.?);
+                        allocator.free(zigp_zon_parsed.zigp_version.?);
+                        var iterfree = zigp_zon_parsed.dependencies.iterator();
+                        while (iterfree.next()) |next| {
+                            allocator.free(next.key_ptr.*);
+                        }
+                        zigp_zon_parsed.dependencies.deinit(allocator);
+                    }
 
                     try zigp_zon_parsed.dependencies.put(allocator, name, .{
                         .owner_name = repo.owner,
@@ -76,16 +89,15 @@ fn add_package_branch(repo: types.repository, allocator: std.mem.Allocator) !voi
                         .provider = repo.provider,
                         .version = try std.fmt.allocPrint(allocator, "%{s}#{s}", .{ branches_list[user_branch_input - 1], commit_hash }),
                     });
+                    defer allocator.free(zigp_zon_parsed.dependencies.get(name).?.version.?);
 
-                    std.debug.print("{s}", .{try types.zigp_zon_to_string(zigp_zon_parsed, allocator)});
+                    try file.setEndPos(0);
+                    try file.seekTo(0);
+                    const res = try types.zigp_zon_to_string(zigp_zon_parsed, allocator);
+                    defer allocator.free(res);
+                    try file.writeAll(res);
 
-                    std.debug.print("{s}Successfully installed {s}.{s}\n", .{ ansi.BRIGHT_GREEN ++ ansi.BOLD, repo.full_name, ansi.RESET });
-                    std.debug.print("{s}✧ Suggestion:{s}\n", .{ ansi.BRIGHT_MAGENTA ++ ansi.BOLD, ansi.RESET });
-                    std.debug.print("You can add these lines to your build.zig (just above the b.installArtifact(exe) line).\n\n", .{});
-                    const suggestor =
-                        ansi.BRIGHT_BLUE ++ "const" ++ ansi.BRIGHT_CYAN ++ " {s} " ++ ansi.RESET ++ "= " ++ ansi.BRIGHT_CYAN ++ "b" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "dependency" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ ", ." ++ ansi.BRIGHT_MAGENTA ++ "{{}}" ++ ansi.RESET ++ ");" ++ "\n" ++
-                        ansi.BRIGHT_CYAN ++ "exe" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_BLUE ++ "root_module" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "addImport" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ "," ++ ansi.BRIGHT_CYAN ++ " {s}" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "module" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ "));\n";
-                    std.debug.print(suggestor, .{ name, name, name, name, name });
+                    hfs.print_suggestion(repo);
                 },
                 1 => std.debug.print("{s}Zig fetch returned an error. The process returned 1 exit code.{s}\n", .{ ansi.RED ++ ansi.BOLD, ansi.RESET }),
                 else => std.debug.print("{s}Zig fetch returned an unknown error. It returned {} exit code.{s}\n", .{ ansi.RED ++ ansi.BOLD, new_term.Exited, ansi.RESET }),
@@ -99,6 +111,7 @@ fn add_package_branch(repo: types.repository, allocator: std.mem.Allocator) !voi
 
 fn add_package_release_version(repo: types.repository, allocator: std.mem.Allocator, user_select_number: usize, release_versions_list: [][]const u8) !void {
     const tag_to_install = try std.fmt.allocPrint(allocator, tar_file_url, .{ repo.full_name, release_versions_list[user_select_number - 2] });
+    defer allocator.free(tag_to_install);
 
     std.debug.print("{s}Adding package: {s}{s}{s}\n", .{ ansi.BRIGHT_YELLOW, ansi.UNDERLINE, release_versions_list[user_select_number - 2], ansi.RESET });
 
@@ -106,7 +119,7 @@ fn add_package_release_version(repo: types.repository, allocator: std.mem.Alloca
     process_to_get_fetch_hash.stdout_behavior = .Pipe;
     try process_to_get_fetch_hash.spawn();
     const fetch_hash = try process_to_get_fetch_hash.stdout.?.readToEndAlloc(allocator, std.math.maxInt(usize));
-
+    defer allocator.free(fetch_hash);
     switch ((try process_to_get_fetch_hash.wait()).Exited) {
         0 => {},
         else => {
@@ -121,7 +134,7 @@ fn add_package_release_version(repo: types.repository, allocator: std.mem.Alloca
     var process: std.process.Child = .init(&[_][]const u8{ "zig", "fetch", "--save", tag_to_install }, allocator);
     switch ((try process.spawnAndWait()).Exited) {
         0 => {
-            const file = try std.fs.cwd().openFile("./zigp.zon", .{});
+            const file = try std.fs.cwd().openFile("./zigp.zon", .{ .mode = .read_write });
             defer file.close();
 
             // Read entire file into memory
@@ -131,6 +144,15 @@ fn add_package_release_version(repo: types.repository, allocator: std.mem.Alloca
             const data = try allocator.dupeZ(u8, data_constu8);
 
             var zigp_zon_parsed = try hfs.parse_zigp_zon(allocator, data);
+            defer {
+                allocator.free(zigp_zon_parsed.zig_version.?);
+                allocator.free(zigp_zon_parsed.zigp_version.?);
+                var iterfree = zigp_zon_parsed.dependencies.iterator();
+                while (iterfree.next()) |next| {
+                    allocator.free(next.key_ptr.*);
+                }
+                zigp_zon_parsed.dependencies.deinit(allocator);
+            }
 
             try zigp_zon_parsed.dependencies.put(allocator, name, .{
                 .owner_name = repo.owner,
@@ -138,15 +160,17 @@ fn add_package_release_version(repo: types.repository, allocator: std.mem.Alloca
                 .provider = repo.provider,
                 .version = try std.fmt.allocPrint(allocator, "^{s}", .{release_versions_list[user_select_number - 2]}),
             });
+            defer allocator.free(zigp_zon_parsed.dependencies.get(name).?.version.?);
 
-            std.debug.print("{s}", .{try types.zigp_zon_to_string(zigp_zon_parsed, allocator)});
-            std.debug.print("{s}Successfully installed {s}.{s}\n", .{ ansi.BRIGHT_GREEN ++ ansi.BOLD, repo.full_name, ansi.RESET });
-            std.debug.print("{s}✧ Suggestion:{s}\n", .{ ansi.BRIGHT_MAGENTA ++ ansi.BOLD, ansi.RESET });
-            std.debug.print("You can add these lines to your build.zig (just above the b.installArtifact(exe) line).\n\n", .{});
-            const suggestor =
-                ansi.BRIGHT_BLUE ++ "const" ++ ansi.BRIGHT_CYAN ++ " {s} " ++ ansi.RESET ++ "= " ++ ansi.BRIGHT_CYAN ++ "b" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "dependency" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ ", ." ++ ansi.BRIGHT_MAGENTA ++ "{{}}" ++ ansi.RESET ++ ");" ++ "\n" ++
-                ansi.BRIGHT_CYAN ++ "exe" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_BLUE ++ "root_module" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "addImport" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ "," ++ ansi.BRIGHT_CYAN ++ " {s}" ++ ansi.RESET ++ "." ++ ansi.BRIGHT_YELLOW ++ "module" ++ ansi.RESET ++ "(" ++ ansi.BRIGHT_GREEN ++ "\"{s}\"" ++ ansi.RESET ++ "));\n";
-            std.debug.print(suggestor, .{ repo.name, repo.name, repo.name, repo.name, repo.name });
+            defer zigp_zon_parsed.dependencies.deinit(allocator);
+
+            try file.setEndPos(0);
+            try file.seekTo(0);
+            const res = try types.zigp_zon_to_string(zigp_zon_parsed, allocator);
+            defer allocator.free(res);
+            try file.writeAll(res);
+
+            hfs.print_suggestion(repo);
         },
         1 => std.debug.print("{s}Zig fetch returned an error. The process returned 1 exit code.{s}\n", .{ ansi.RED ++ ansi.BOLD, ansi.RESET }),
         else => std.debug.print("{s}Zig fetch returned an unknown error.{s}\n", .{ ansi.RED ++ ansi.BOLD, ansi.RESET }),

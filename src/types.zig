@@ -99,5 +99,5 @@ pub fn zigp_zon_to_string(data: zigp_zon, allocator: std.mem.Allocator) ![]const
     try result.appendSlice(allocator, "    },\n");
     try result.appendSlice(allocator, "}\n");
 
-    return result.toOwnedSlice(allocator);
+    return try result.toOwnedSlice(allocator);
 }

@@ -10,6 +10,33 @@ const tar_file_url = "https://github.com/{s}/archive/refs/tags/{s}.tar.gz";
 
 const in = std.fs.File.stdin();
 
+pub fn get_versioning_type(version: []const u8) types.update {
+    return switch (version[0]) {
+        '^' => .caret_range,
+        '~' => .tilde_range,
+        '|' => .wrong_semver_name_exact_versioning,
+        '*' => .any_latest,
+        '%' => .latest_branching,
+        '=' => switch (version[1]) {
+            '=' => switch (version[2]) {
+                0...9 => .exact_versioning,
+                '%' => .exact_branching,
+                else => @panic("unable to parse"),
+            },
+            else => @panic("unable to parse"),
+        },
+        '>', '<' => .range_based_versioning,
+        else => unreachable,
+    };
+}
+
+pub fn yes_no_input_taker() bool {
+    var buf: [2]u8 = undefined;
+    var reader = in.reader(&buf);
+    const user_input = reader.interface.takeDelimiterExclusive('\n') catch return false;
+    return user_input[0] == 'y' or user_input[0] == 'Y';
+}
+
 pub fn clean_and_parse_semver(sermver_as_string_: []const u8) !types.semver {
     var semver_as_string = sermver_as_string_;
     if (semver_as_string[0] == 'v') {
@@ -113,7 +140,7 @@ pub fn read_string(allocator: std.mem.Allocator) !u32 {
 
 pub fn read_integer() !usize {
     var buf: [25]u8 = undefined;
-    var reader = std.fs.File.stdin().reader(&buf);
+    var reader = in.reader(&buf);
     const num_str = reader.interface.takeDelimiterExclusive('\n') catch return error.UnexpectedEos;
     return try std.fmt.parseInt(usize, num_str, 10);
 }

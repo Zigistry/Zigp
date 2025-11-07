@@ -5,7 +5,8 @@ const hfs = @import("../libs/helper_functions.zig");
 const ansi = @import("../libs/ansi_codes.zig");
 
 pub fn install_app(repo: types.repository, allocator: std.mem.Allocator) !void {
-    const stdin = std.fs.File.stdin();
+    std.debug.print("You are about to install a program, do you trust {s}? (Y/n): ", .{repo.full_name});
+    if (!hfs.yes_no_input_taker()) return;
 
     const items = hfs.fetch_versions(repo, allocator) catch return;
 
@@ -20,38 +21,8 @@ pub fn install_app(repo: types.repository, allocator: std.mem.Allocator) !void {
         std.debug.print("{}){s} {s}{s}\n", .{ i, ansi.BOLD, value, ansi.RESET });
     }
 
-    outer: while (true) {
-        std.debug.print("{s}>>>{s} ", .{ ansi.BRIGHT_CYAN, ansi.RESET });
-
-        var buf: [16]u8 = undefined;
-
-        const len = try stdin.read(&buf);
-
-        var input = buf[0..len];
-
-        if (input.len == 0) {
-            std.debug.print("{s}Error:{s} No input entered.\n", .{ ansi.RED ++ ansi.BOLD, ansi.RESET });
-            continue :outer;
-        }
-
-        if (input.len > 0 and (input[input.len - 1] == '\n' or input[input.len - 1] == '\r')) {
-            input = input[0 .. input.len - 1];
-        }
-
-        for (input) |char| {
-            if (!std.ascii.isDigit(char)) {
-                std.debug.print("{s}Error:{s} Non charater input recieved.\n", .{ ansi.RED ++ ansi.BOLD, ansi.RESET });
-                continue :outer;
-            }
-        }
-
-        const number = try std.fmt.parseInt(u16, input, 10);
-
-        if (number < 1 or number > items.len) {
-            std.debug.print("{s}Error:{s} Number selection is out of range.\n", .{ ansi.RED ++ ansi.BOLD, ansi.RESET });
-            continue;
-        }
-
+    while (true) {
+        const number = hfs.range_input_taker(1, items.len);
         const tag_to_install = switch (number) {
             1 => null,
             else => items[number - 1],

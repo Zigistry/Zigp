@@ -7,16 +7,12 @@
             .hash = "zorsig-0.0.1-AAAAAFgZAABK0y-goAY_tJzAcdU-itZpZiXxWGuU7Jww",
         },
         .zap = .{
-            .url = "git+https://github.com/zigzap/zap?ref=zig-master#76679f308c702cd8880201e6e93914e1d836a54b",
-            .hash = "zap-0.10.6-GoeB8w-EJABTkxyoGH_Z8oMBYMxTBvn7YWk-DrJOHuDO",
+            .url = "https://github.com/zigzap/zap/archive/refs/tags/v0.10.6.tar.gz",
+            .hash = "zap-0.10.6-GoeB89aDJAAUufiqV7sUCudCoSSCle0E2fbw388bO1Ug",
         },
         .capy = .{
             .url = "git+https://github.com/capy-ui/capy?ref=master#bb12dab974a310b737acbaa6649cc2f2f8f8455f",
             .hash = "capy-0.4.1-kru7R1I2ZQS55Kk-HN_p8YDKCdkgGhmJe8f0Gq0djDfd",
-        },
-        .zls = .{
-            .url = "https://github.com/zigtools/zls/archive/refs/tags/0.15.0.tar.gz",
-            .hash = "zls-0.15.0-rmm5fkjqIwDZpmDHyKwxa9K2gcI3FPaGVFPwjYWFBM5B",
         },
     },
     .fingerprint = 0x1879e3171df18555,

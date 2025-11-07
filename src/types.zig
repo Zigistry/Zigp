@@ -116,7 +116,7 @@ pub fn zigp_zon_to_string(data: zigp_zon, allocator: std.mem.Allocator) ![]const
 pub const update = enum {
     caret_range,
     tilde_range,
-    wrong_semver_name_exact_versioning,
+    not_following_semver_name_exact_versioning,
     exact_versioning,
     any_latest,
     latest_branching,

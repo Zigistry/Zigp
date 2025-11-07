@@ -3,6 +3,10 @@ const ansi = @import("../libs/ansi_codes.zig");
 const hfs = @import("../libs/helper_functions.zig");
 const types = @import("../types.zig");
 
+pub fn update_specific_packages(_: []const u8, _: std.mem.Allocator) !void {
+    std.debug.print("Updating specific", .{});
+}
+
 pub fn update_packages(allocator: std.mem.Allocator) !void {
     const file = try std.fs.cwd().openFile("./zigp.zon", .{ .mode = .read_write });
     defer file.close();
@@ -51,16 +55,66 @@ pub fn update_packages(allocator: std.mem.Allocator) !void {
                 },
                 .caret_range => {
                     // ------- //
+
                     std.debug.print("Caret update: {s}\n", .{repo.full_name});
-                    //
-                },
-                .wrong_semver_name_exact_versioning, .exact_branching, .exact_versioning => {
-                    // No need to update
-                    std.debug.print("No update: {s}\n", .{repo.full_name});
-                    //
+
+                    const max_semver_version = hfs.semver_caret_max_range(try hfs.clean_and_parse_semver(next.value_ptr.version.?[1..]));
+
+                    const versions = try hfs.fetch_versions(repo, allocator);
+
+                    var selected_version_to_install_optional: ?[]const u8 = null;
+                    // Going from big to small
+                    // the moment we reach something that is less than max_semver_version, we break.
+                    for (versions) |version| {
+                        if (hfs.semver_x_greater_than_y(max_semver_version, hfs.clean_and_parse_semver(version) catch continue)) {
+                            selected_version_to_install_optional = version;
+                            break;
+                        }
+                    }
+                    if (selected_version_to_install_optional) |selected_version_to_install| {
+                        const tar_file_url = "https://github.com/{s}/archive/refs/tags/{s}.tar.gz";
+                        const url_to_fetch = try std.fmt.allocPrint(allocator, tar_file_url, .{ repo_full_name, selected_version_to_install });
+                        const res = try hfs.run_cli_command(&.{ "zig", "fetch", try std.fmt.allocPrint(allocator, "--save={s}", .{dependency_name}), url_to_fetch }, allocator, .no_read);
+                        switch (res.Exited) {
+                            0 => std.debug.print("{s}Updated: {s}{s}\n", .{ ansi.BRIGHT_GREEN ++ ansi.BOLD, repo.full_name, ansi.RESET }),
+                            else => std.debug.print("{s}Error while doing zig fetch.{s}\n", .{ ansi.BRIGHT_RED ++ ansi.BOLD, ansi.RESET }),
+                        }
+
+                        const version_to_add_to_zigp_zon = try types.semver_to_string(try hfs.clean_and_parse_semver(selected_version_to_install), allocator);
+                        next.value_ptr.version = try std.fmt.allocPrint(allocator, "^{s}", .{version_to_add_to_zigp_zon});
+                    } else {
+                        std.debug.print("{s} Is already up to date.\n", .{repo_full_name});
+                    }
                 },
                 .latest_branching => {
                     std.debug.print("Latest branch: {s}\n", .{repo.full_name});
+                    var branch_iter = std.mem.splitAny(u8, next.value_ptr.version.?, "%#");
+                    _ = branch_iter.next().?;
+                    const branch_name = branch_iter.next().?;
+                    std.debug.print("Branch name: {s}\n", .{branch_name});
+                    std.debug.print("Version name: {s}\n", .{next.value_ptr.version.?});
+                    const tag_to_install = try std.fmt.allocPrint(allocator, "git+https://github.com/{s}#{s}", .{ repo.full_name, branch_name });
+                    defer allocator.free(tag_to_install);
+
+                    const process_to_get_fetch_hash = try hfs.run_cli_command(&.{ "zig", "fetch", tag_to_install }, allocator, .stdout);
+                    switch (process_to_get_fetch_hash.Exited) {
+                        0 => {
+                            const process_to_get_commit_hash = try hfs.run_cli_command(&.{ "zig", "fetch", "--save", tag_to_install }, allocator, .stderr);
+
+                            switch (process_to_get_commit_hash.Exited) {
+                                0 => {
+                                    const index = std.mem.indexOf(u8, process_to_get_commit_hash.text, " to commit ") orelse return error.no_internet;
+
+                                    const hash = process_to_get_commit_hash.text[index + " to commit ".len ..];
+                                    var iter5 = std.mem.splitScalar(u8, hash, '\n');
+                                    const commit_hash = iter5.next().?;
+                                    next.value_ptr.version = try std.fmt.allocPrint(allocator, "%{s}#{s}", .{ branch_name, commit_hash });
+                                },
+                                else => return error.unknown,
+                            }
+                        },
+                        else => return error.unknown,
+                    }
                 },
                 .tilde_range => {
                     std.debug.print("Tilde branch: {s}\n", .{repo.full_name});
@@ -68,7 +122,15 @@ pub fn update_packages(allocator: std.mem.Allocator) !void {
                 .range_based_versioning => {
                     std.debug.print("Ranged based versioning: {s}\n", .{repo.full_name});
                 },
+                .not_following_semver_name_exact_versioning, .exact_branching, .exact_versioning => {
+                    // No need to update
+                    std.debug.print("No update: {s}\n", .{repo.full_name});
+                    //
+                },
             }
+            try file.seekTo(0);
+            try file.setEndPos(0);
+            try file.writeAll(try types.zigp_zon_to_string(zigp_zon_parsed, allocator));
         } else {
             @panic("Zigp only supports GitHub.");
         }

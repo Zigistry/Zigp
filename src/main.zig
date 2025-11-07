@@ -51,6 +51,8 @@ pub fn main() !void {
             display.help.add_info();
         } else if (eql(args[1], "install")) {
             display.help.install_info();
+        } else if (eql(args[1], "update")) {
+            display.help.update_info();
         } else if (eql(args[1], "help")) {
             display.help.all_info();
         } else if (eql(args[1], "self-update")) {
@@ -86,6 +88,8 @@ pub fn main() !void {
         } else if (eql(args[1], "update")) {
             if (eql(args[2], "all")) {
                 try update_package.update_packages(allocator);
+            } else if (eql(args[2], "--specific")) {
+                display.help.update_info();
             }
         } else if (eql(args[1], "add")) {
             const repo = hfs.query_to_repo(args[2]) catch |err| switch (err) {
@@ -135,5 +139,12 @@ pub fn main() !void {
         // args[0]  args[1]     args[2]         args[3]
         // zigp     something   something_else  yet_something
         else => display.err.unknown_argument(args[2]),
+        4 => if (eql(args[1], "update")) {
+            if (eql(args[2], "--specific")) {
+                try update_package.update_specific_packages(args[3], allocator);
+            }
+        },
     }
 }
+// zigp update all
+// zigp update --specific thing

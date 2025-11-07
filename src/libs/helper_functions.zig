@@ -10,11 +10,32 @@ const tar_file_url = "https://github.com/{s}/archive/refs/tags/{s}.tar.gz";
 
 const in = std.fs.File.stdin();
 
+pub fn semver_caret_max_range(x: types.semver) types.semver {
+    var max = x;
+    if (x.major > 0) {
+        max.major += 1;
+        max.minor = 0;
+        max.patch = 0;
+    } else if (x.minor > 0) {
+        max.minor += 1;
+        max.patch = 0;
+    } else {
+        max.patch += 1;
+    }
+    return max;
+}
+
+pub fn semver_x_greater_than_y(x: types.semver, y: types.semver) bool {
+    if (x.major != y.major) return x.major > y.major;
+    if (x.minor != y.minor) return x.minor > y.minor;
+    return x.patch > y.patch;
+}
+
 pub fn get_versioning_type(version: []const u8) types.update {
     return switch (version[0]) {
         '^' => .caret_range,
         '~' => .tilde_range,
-        '|' => .wrong_semver_name_exact_versioning,
+        '|' => .not_following_semver_name_exact_versioning,
         '*' => .any_latest,
         '%' => .latest_branching,
         '=' => switch (version[1]) {

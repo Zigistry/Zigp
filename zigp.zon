@@ -14,11 +14,11 @@
             .provider = .GitHub,
             .version = "%master#bb12dab974a310b737acbaa6649cc2f2f8f8455f",
         },
-        .zls = .{
-            .owner_name = "zigtools",
-            .repo_name = "zls",
+        .zap = .{
+            .owner_name = "zigzap",
+            .repo_name = "zap",
             .provider = .GitHub,
-            .version = "^0.15.0",
+            .version = "^0.10.6",
         },
     },
 }

@@ -37,6 +37,10 @@ pub const help = struct {
         std.debug.print("    Example: {s}zigp{s} update {s}all{s}\n", .{ ansi.BRIGHT_MAGENTA, ansi.BRIGHT_WHITE, ansi.BRIGHT_MAGENTA, ansi.RESET });
         std.debug.print("{s}--------------------------------------------------------{s}\n", .{ ansi.BRIGHT_WHITE, ansi.RESET });
 
+        std.debug.print("{s}remove{s}      - Removes a dependency of a zig project.\n", .{ ansi.BRIGHT_GREEN, ansi.RESET });
+        std.debug.print("    Example: {s}zigp{s} remove {s}zorsig{s}\n", .{ ansi.BRIGHT_MAGENTA, ansi.BRIGHT_WHITE, ansi.BRIGHT_MAGENTA, ansi.RESET });
+        std.debug.print("{s}--------------------------------------------------------{s}\n", .{ ansi.BRIGHT_WHITE, ansi.RESET });
+
         std.debug.print("{s}info{s}      - Display the info of a repository.\n", .{ ansi.BRIGHT_GREEN, ansi.RESET });
         std.debug.print("    Example: {s}zigp{s} info {s}gh/zigtools/zls{s}\n", .{ ansi.BRIGHT_MAGENTA, ansi.BRIGHT_WHITE, ansi.BRIGHT_MAGENTA, ansi.RESET });
         std.debug.print("{s}--------------------------------------------------------{s}\n", .{ ansi.BRIGHT_WHITE, ansi.RESET });

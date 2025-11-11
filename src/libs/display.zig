@@ -2,6 +2,21 @@ const std = @import("std");
 const ansi = @import("./ansi_codes.zig");
 
 pub const help = struct {
+    pub fn remove_info() void {
+        std.debug.print("{s}╔════════════════════════════════════════════╗\n", .{ansi.BRIGHT_CYAN});
+        std.debug.print("║       Zigistry Remove Package Command      ║\n", .{});
+        std.debug.print("╚════════════════════════════════════════════╝{s}\n\n", .{ansi.RESET});
+
+        std.debug.print("{s}Description:{s}\n", .{ ansi.BRIGHT_YELLOW, ansi.RESET });
+        std.debug.print("    The remove command is used to remove a package into your Zig project.\n\n", .{});
+
+        std.debug.print("{s}Syntax:{s}\n", .{ ansi.BRIGHT_YELLOW, ansi.RESET });
+        std.debug.print("    {s}zigp{s} remove {s}<package-name>{s}\n\n", .{ ansi.BRIGHT_MAGENTA, ansi.BRIGHT_GREEN, ansi.BRIGHT_MAGENTA, ansi.RESET });
+
+        std.debug.print("{s}Example:{s}\n", .{ ansi.BRIGHT_YELLOW, ansi.RESET });
+        std.debug.print("    {s}zigp{s} remove {s}zorsig{s}\n\n", .{ ansi.BRIGHT_MAGENTA, ansi.BRIGHT_GREEN, ansi.BRIGHT_MAGENTA, ansi.RESET });
+        std.debug.print("{s}The above command removes the 'zorsig' package from zigp.zon and build.zig.zon.{s}\n\n", .{ ansi.BRIGHT_WHITE ++ ansi.BOLD, ansi.RESET });
+    }
     pub fn all_info() void {
         std.debug.print("{s}╔══════════════════════════════════════════╗\n", .{ansi.BRIGHT_CYAN});
         std.debug.print("║         Welcome to Zigistry-CLI!         ║\n", .{});

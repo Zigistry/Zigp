@@ -2,10 +2,12 @@ const std = @import("std");
 const display = @import("libs/display.zig");
 const add_package = @import("./packages/add.zig");
 const update_package = @import("./packages/update.zig");
+const remove_package = @import("./packages/remove.zig");
 const info_package = @import("./packages/info.zig");
 const program_manager = @import("./programs/install.zig");
 const types = @import("types.zig");
 const hfs = @import("./libs/helper_functions.zig");
+const init = @import("./libs/init.zig");
 
 inline fn eql(x: []const u8, y: []const u8) bool {
     return std.mem.eql(u8, x, y);
@@ -49,10 +51,14 @@ pub fn main() !void {
         // zigp     something
         2 => if (eql(args[1], "add")) {
             display.help.add_info();
+        } else if (eql(args[1], "init")) {
+            try init.init();
         } else if (eql(args[1], "install")) {
             display.help.install_info();
         } else if (eql(args[1], "update")) {
             display.help.update_info();
+        } else if (eql(args[1], "remove")) {
+            display.help.remove_info();
         } else if (eql(args[1], "help")) {
             display.help.all_info();
         } else if (eql(args[1], "self-update")) {
@@ -85,6 +91,8 @@ pub fn main() !void {
             }
             // ====================================================
             try program_manager.install_app(repo, allocator);
+        } else if (eql(args[1], "remove")) {
+            try remove_package.remove_dependency(allocator, args[2]);
         } else if (eql(args[1], "update")) {
             if (eql(args[2], "all")) {
                 try update_package.update_packages(allocator);

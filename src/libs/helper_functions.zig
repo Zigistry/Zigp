@@ -443,7 +443,6 @@ pub fn parse_build_zig_zon(allocator: std.mem.Allocator, content: [:0]const u8) 
     const root_struct = if (root == .struct_literal) root.struct_literal else return error.Parse;
 
     var result: types.build_zig_zon = .{};
-
     for (root_struct.names, 0..root_struct.vals.len) |name_node, index| {
         const value = root_struct.vals.at(@intCast(index));
         const name = name_node.get(zoir);
@@ -452,8 +451,34 @@ pub fn parse_build_zig_zon(allocator: std.mem.Allocator, content: [:0]const u8) 
             result.name = try allocator.dupe(u8, value.get(zoir).enum_literal.get(zoir));
         }
 
+        if (std.mem.eql(u8, name, "fingerprint")) {
+            result.fingerprint = try value.get(zoir).int_literal.big.toInt(u64);
+        }
+
+        if (std.mem.eql(u8, name, "paths")) dep2: {
+            var my_list: std.array_list.Managed([]const u8) = .init(allocator);
+            switch (value.get(zoir)) {
+                .array_literal => |sl| {
+                    for (0..sl.len) |path_index| {
+                        const n = sl.at(@intCast(path_index)).get(zoir).string_literal;
+                        try my_list.append(try allocator.dupe(u8, n));
+                    }
+                    result.paths = try my_list.toOwnedSlice();
+                },
+                .empty_literal => {
+                    result.paths = try my_list.toOwnedSlice();
+                    break :dep2;
+                },
+                else => return error.Parse,
+            }
+        }
+
         if (std.mem.eql(u8, name, "version")) {
             result.version = try allocator.dupe(u8, value.get(zoir).string_literal);
+        }
+
+        if (std.mem.eql(u8, name, "minimum_zig_version")) {
+            result.minimum_zig_version = try allocator.dupe(u8, value.get(zoir).string_literal);
         }
 
         if (std.mem.eql(u8, name, "dependencies")) dep: {

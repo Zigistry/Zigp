@@ -1,18 +1,5 @@
 .{
     .zigp_version = "0.0.0",
     .zig_version = "0.15.1",
-    .dependencies = .{
-        .capy = .{
-            .owner_name = "capy-ui",
-            .repo_name = "capy",
-            .provider = .GitHub,
-            .version = "%2025.3.0-mach",
-        },
-        .zconfig = .{
-            .owner_name = "jrosberg",
-            .repo_name = "zig-zconfig",
-            .provider = .GitHub,
-            .version = "^0.1.0",
-        },
-    },
+    .dependencies = .{},
 }

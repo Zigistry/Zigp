@@ -1,16 +1,7 @@
 .{
     .name = .zigp,
     .version = "0.0.0",
-    .dependencies = .{
-        .capy = .{
-            .url = "git+https://github.com/capy-ui/capy?ref=2025.3.0-mach#b253eac7c793f388e99f52a319a616dbb5409594",
-            .hash = "capy-0.4.0-xXDmB1C33QXu3fO-gjs0fMQ12FJ2meaQIKnmFL5VDFFx",
-        },
-        .zconfig = .{
-            .url = "https://github.com/jrosberg/zig-zconfig/archive/refs/tags/0.1.0.tar.gz",
-            .hash = "zconfig-0.1.0-OV2mRE90AADm42rnf8nrFDKL8Jus1mAmnzVScgptR_VA",
-        },
-    },
+    .dependencies = .{},
     .fingerprint = 0x1879e3171df18555,
     .minimum_zig_version = "0.15.1",
     .paths = .{

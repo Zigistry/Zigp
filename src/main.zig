@@ -8,6 +8,7 @@ const program_manager = @import("./programs/install.zig");
 const types = @import("types.zig");
 const hfs = @import("./libs/helper_functions.zig");
 const init = @import("./libs/init.zig");
+const package_search = @import("./packages/search.zig");
 
 inline fn eql(x: []const u8, y: []const u8) bool {
     return std.mem.eql(u8, x, y);
@@ -35,6 +36,7 @@ pub fn main() !void {
     //     if (deinit_status == .leak) @panic("Memory got leaked.");
     // }
 
+    hfs.set_file_stdin();
     const allocator = std.heap.c_allocator;
 
     // arguments
@@ -91,6 +93,10 @@ pub fn main() !void {
             }
             // ====================================================
             try program_manager.install_app(repo, allocator);
+        } else if (eql(args[1], "search")) {
+            const query = if (args.len > 2) args[2] else null;
+            const filter = if (args.len > 3) args[3] else null;
+            try package_search.search_packages(allocator, query, filter);
         } else if (eql(args[1], "remove")) {
             try remove_package.remove_dependency(allocator, args[2]);
         } else if (eql(args[1], "update")) {
@@ -142,8 +148,11 @@ pub fn main() !void {
                 return;
             }
             try info_package.info(repo, allocator);
+        } else if (eql(args[1], "search")) {
+            const query = if (args.len > 2) args[2] else null;
+            const filter = if (args.len > 3) args[3] else null;
+            try package_search.search_packages(allocator, query, filter);
         } else display.err.unknown_argument(args[2]),
-
         // args[0]  args[1]     args[2]         args[3]
         // zigp     something   something_else  yet_something
         else => display.err.unknown_argument(args[2]),

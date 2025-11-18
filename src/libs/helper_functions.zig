@@ -8,7 +8,11 @@ const releases_url = "https://api.github.com/repos/{s}/releases";
 const branches_url = "https://api.github.com/repos/{s}/branches";
 const tar_file_url = "https://github.com/{s}/archive/refs/tags/{s}.tar.gz";
 
-const in = std.fs.File.stdin();
+var in: std.fs.File = undefined;
+
+pub fn set_file_stdin() void {
+    in = std.fs.File.stdin();
+}
 
 pub fn semver_parse_range_based(input: []const u8) !struct {
     min: types.semver,
@@ -192,8 +196,22 @@ pub fn read_string(allocator: std.mem.Allocator) !u32 {
 pub fn read_integer() !usize {
     var buf: [25]u8 = undefined;
     var reader = in.reader(&buf);
-    const num_str = reader.interface.takeDelimiterExclusive('\n') catch return error.UnexpectedEos;
-    return try std.fmt.parseInt(usize, num_str, 10);
+    const num_str_cr = reader.interface.takeDelimiterExclusive('\n') catch |err| {
+        std.debug.print("ERROR in takeDelimiterExclusive: {s}\n", .{@errorName(err)});
+        return error.UnexpectedEos;
+    };
+
+    // Windows terminal compatibility issues
+    // Trim the carriage return
+    const num_str = std.mem.trim(u8, num_str_cr, " \r\n\t");
+
+    std.debug.print("\n", .{});
+    const parsed_int = std.fmt.parseInt(usize, num_str, 10) catch |err| {
+        std.debug.print("Failed to parse '{s}': {s}\n", .{ num_str, @errorName(err) });
+        return error.InvalidNumber;
+    };
+
+    return parsed_int;
 }
 
 pub fn fetch_versions(repo: types.repository, allocator: std.mem.Allocator) ![][]const u8 {

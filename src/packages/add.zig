@@ -1,5 +1,5 @@
 const std = @import("std");
-const ansi = @import("../libs/ansi_codes.zig");
+const ansi = @import("ansi");
 const hfs = @import("../libs/helper_functions.zig");
 const types = @import("../types.zig");
 

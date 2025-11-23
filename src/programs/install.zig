@@ -2,7 +2,7 @@ const std = @import("std");
 const display = @import("../libs/display.zig");
 const types = @import("../types.zig");
 const hfs = @import("../libs/helper_functions.zig");
-const ansi = @import("../libs/ansi_codes.zig");
+const ansi = @import("ansi");
 
 pub fn install_app(repo: types.repository, allocator: std.mem.Allocator) !void {
     std.debug.print("You are about to install a program, do you trust {s}https://github.com/{s}{s}? (Y/n): ", .{ ansi.BRIGHT_YELLOW ++ ansi.UNDERLINE, repo.full_name, ansi.RESET });

@@ -1,7 +1,7 @@
 const std = @import("std");
 const http = std.http;
 const json = std.json;
-const ansi = @import("../libs/ansi_codes.zig");
+const ansi = @import("ansi");
 
 fn month_num_to_month_name(month: u8) []const u8 {
     return switch (month) {
@@ -57,6 +57,18 @@ const Package = struct {
 };
 
 pub fn search_packages(allocator: std.mem.Allocator, query: ?[]const u8, filter: ?[]const u8) !void {
+    var client = http.Client{ .allocator = allocator };
+    defer client.deinit();
+
+    return search_packages_with_client(allocator, &client, query, filter);
+}
+
+pub fn search_packages_with_client(
+    allocator: std.mem.Allocator,
+    client: anytype,
+    query: ?[]const u8,
+    filter: ?[]const u8,
+) !void {
     const actual_query = if (query != null and query.?.len > 0 and !std.mem.eql(u8, query.?, "*")) query else null;
     const actual_filter = if (filter != null and filter.?.len > 0) filter else null;
 
@@ -68,15 +80,10 @@ pub fn search_packages(allocator: std.mem.Allocator, query: ?[]const u8, filter:
     var url_buffer: [512]u8 = undefined;
     const url = try build_search_url(&url_buffer, actual_query, actual_filter);
 
-    // std.debug.print("Searching: {s}\n\n", .{url});
-
-    // Create HTTP client
-    var client = http.Client{ .allocator = allocator };
-    defer client.deinit();
-
-    var body = std.Io.Writer.Allocating.init(allocator);
-    const bodywriter: *std.Io.Writer = &body.writer;
+    var body = std.io.Writer.Allocating.init(allocator);
+    const bodywriter: *std.io.Writer = &body.writer;
     defer body.deinit();
+
     const response = try client.fetch(.{
         .location = .{ .url = url },
         .method = .GET,
@@ -94,7 +101,7 @@ pub fn search_packages(allocator: std.mem.Allocator, query: ?[]const u8, filter:
     print_packages(packages);
 }
 
-fn free_packages(allocator: std.mem.Allocator, packages: []Package) void {
+pub fn free_packages(allocator: std.mem.Allocator, packages: []Package) void {
     for (packages) |pkg| {
         allocator.free(pkg.name);
         allocator.free(pkg.full_name);

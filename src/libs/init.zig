@@ -1,5 +1,5 @@
 const std = @import("std");
-const ansi = @import("./ansi_codes.zig");
+const ansi = @import("ansi");
 const hfs = @import("./helper_functions.zig");
 
 const content =

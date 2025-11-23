@@ -1,5 +1,5 @@
 const std = @import("std");
-const ansi = @import("./ansi_codes.zig");
+const ansi = @import("ansi");
 const types = @import("../types.zig");
 const display = @import("display.zig");
 const builtin = @import("builtin");
@@ -205,8 +205,8 @@ pub fn read_integer() !usize {
     // Windows terminal compatibility issues
     // Trim the carriage return
     const delimiters = switch (builtin.target.os.tag) {
-        .windows => " \n\t",
-        else => " \r\n\t",
+        .windows => " \r\n\t",
+        else => " \n\t",
     };
     const num_str = std.mem.trim(u8, num_str_cr, delimiters);
 

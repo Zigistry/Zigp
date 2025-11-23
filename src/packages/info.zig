@@ -1,7 +1,7 @@
 const types = @import("../types.zig");
 const std = @import("std");
 const hfs = @import("../libs/helper_functions.zig");
-const ansi = @import("../libs/ansi_codes.zig");
+const ansi = @import("ansi");
 
 pub fn info(repo: types.repository, allocator: std.mem.Allocator) !void {
     const versions = try hfs.fetch_versions(repo, allocator);

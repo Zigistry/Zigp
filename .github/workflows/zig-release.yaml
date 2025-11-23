@@ -25,8 +25,8 @@ jobs:
         run: zig build -Dtarget=aarch64-macos
       - name: MacOS 
         run: zig build -Dtarget=x86_64-linux
-      - name: Linux
+      - name: Linux-aarch64
         run: zig build -Dtarget=aarch64-linux
+      - name: Linux
         run: zig build -Dtarget=x86_64-linux
-        run: zig build -Dtarget=
 
